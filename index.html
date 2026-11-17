@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>二十面体ゲーム 〜ハミルトンの世界一周〜</title>
+<meta name="description" content="正十二面体の20の頂点を一度ずつ訪ねて出発点に戻る、ハミルトン考案（1857年）の古典パズル。20都市をめぐる世界一周の旅として遊べます。印刷ワークシート付き。">
+<meta property="og:title" content="二十面体ゲーム 〜ハミルトンの世界一周〜">
+<meta property="og:description" content="20の頂点を一度ずつ訪ねて輪を閉じる、ハミルトンの古典パズル。都市名モードと印刷ワークシート付き。">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://jkj7vv2nd7-lang.github.io/icosian-game/og-image.png">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<style>
+:root{
+  --ink:#2f3a3a; --paper:#f4f9f7; --accent:#c8541e; --accent2:#17645a;
+  --gold:#e9a13b; --card:#fffdf8; --line:#cfe0d8;
+}
+*{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+html,body{margin:0; padding:0;}
+body{
+  font-family:"Hiragino Maru Gothic ProN","Hiragino Sans","Noto Sans JP",sans-serif;
+  background:linear-gradient(180deg,#dcefe8 0%,#f4f9f7 55%,#fdf3e3 100%);
+  color:var(--ink); min-height:100vh;
+}
+button{font-family:inherit; cursor:pointer;}
+.screen{display:none; max-width:560px; margin:0 auto; padding:16px 14px 40px;}
+.screen.on{display:block;}
+
+/* ---------- タイトル ---------- */
+#scr-title{text-align:center; padding-top:24px;}
+.logo-badge{
+  display:inline-block; background:var(--accent2); color:#fff; font-weight:700;
+  padding:4px 14px; border-radius:999px; font-size:13px; letter-spacing:.12em;
+  box-shadow:0 3px 0 #0f463f;
+}
+h1.app-title{font-size:34px; margin:14px 0 2px; letter-spacing:.04em; color:#14524a;}
+.app-sub{font-size:17px; font-weight:700; color:var(--accent); margin:0 0 6px; letter-spacing:.08em;}
+.sub{font-size:14.5px; color:#5c7268; margin:0 0 16px; line-height:1.7;}
+.demo-card{
+  background:var(--card); border:3px solid var(--line); border-radius:18px;
+  padding:12px; box-shadow:0 6px 18px rgba(30,90,80,.13); margin-bottom:18px;
+}
+.demo-card svg{width:100%; max-width:340px; height:auto; display:block; margin:0 auto;}
+.mode-row{display:flex; gap:10px; justify-content:center; margin-bottom:14px;}
+.mode-btn{
+  border:2.5px solid var(--line); background:#fffdf8; color:#14524a; font-weight:700;
+  border-radius:999px; padding:9px 20px; font-size:15px; box-shadow:0 3px 0 #cfded6;
+}
+.mode-btn.sel{background:var(--accent2); color:#fff; border-color:var(--accent2); box-shadow:0 3px 0 #0f463f;}
+.big-btn{
+  border:none; border-radius:999px; padding:14px 26px; font-size:17px; font-weight:700;
+  background:var(--accent); color:#fff; box-shadow:0 4px 0 #9c3f12;
+}
+.big-btn:active{transform:translateY(2px); box-shadow:0 2px 0 #9c3f12;}
+.big-btn.green{background:var(--accent2); box-shadow:0 4px 0 #0f463f;}
+.big-btn.green:active{box-shadow:0 2px 0 #0f463f;}
+.big-btn.ghost{background:#fffdf8; color:#14524a; border:2.5px solid var(--line); box-shadow:0 4px 0 #cfded6;}
+.big-btn.ghost:active{box-shadow:0 2px 0 #cfded6;}
+.big-btn:disabled{opacity:.45; box-shadow:none;}
+.btn-row{display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin-top:12px;}
+.howto{
+  margin-top:20px; background:#fffdf8; border:2px dashed var(--line);
+  border-radius:14px; padding:12px 16px; text-align:left; font-size:14px; line-height:1.85;
+}
+.howto b{color:#14524a;}
+.credit{margin-top:14px; font-size:12px; color:#8ba298; line-height:1.7;}
+
+/* ---------- 遊ぶ画面 ---------- */
+.play-head{display:flex; align-items:center; gap:10px; margin-bottom:8px;}
+.play-head .ttl{font-size:20px; font-weight:700; color:#14524a; flex:1;}
+.small-btn{
+  background:#fffdf8; border:2.5px solid var(--line); border-radius:999px;
+  padding:7px 14px; font-size:14px; font-weight:700; color:#14524a; box-shadow:0 3px 0 #cfded6;
+}
+.small-btn:active{transform:translateY(2px); box-shadow:0 1px 0 #cfded6;}
+#board-card{
+  position:relative; background:var(--card); border:3px solid var(--line); border-radius:18px;
+  box-shadow:0 6px 18px rgba(30,90,80,.13); padding:8px;
+}
+#board-box svg{width:100%; height:auto; display:block;}
+#stamp{
+  position:absolute; top:10px; right:12px; z-index:8; display:none;
+  border:4px solid #d23c2a; color:#d23c2a; font-weight:900; font-size:25px;
+  padding:4px 14px; border-radius:10px; transform:rotate(10deg);
+  background:rgba(255,250,240,.88); letter-spacing:.15em;
+}
+.status{
+  margin-top:12px; background:#fffdf8; border:2.5px solid var(--line); border-radius:14px;
+  padding:10px 14px; text-align:center;
+}
+.status .now{font-size:19px; font-weight:700; color:#14524a;}
+.status .meta{font-size:13.5px; color:#5c7268; margin-top:3px;}
+.msg{min-height:26px; text-align:center; font-size:15.5px; font-weight:700; color:#9c3f12; margin:10px 0 0;}
+#done-box{
+  display:none; margin-top:14px; background:#fff8ec; border:3px solid #f0d9a8; border-radius:16px;
+  padding:14px 16px; text-align:center;
+}
+#done-box .ttl2{font-size:21px; font-weight:900; color:#9c3f12;}
+#done-box .meta2{font-size:14px; color:#7a5a28; margin-top:4px;}
+#itinerary{font-size:14.5px; line-height:2; color:#43302b; margin-top:8px; text-align:left;}
+.note-line{margin-top:16px; font-size:12px; color:#8ba298; text-align:center; line-height:1.7;}
+.vtx{cursor:pointer;}
+.vtx .hit{fill:transparent;}
+@keyframes candPulse{0%,100%{opacity:.95;} 50%{opacity:.35;}}
+.cand-ring{animation:candPulse 1.1s ease-in-out infinite;}
+@keyframes runLight{to{stroke-dashoffset:-200;}}
+.run-light{stroke-dasharray:6 94; animation:runLight 2.6s linear infinite;}
+
+/* ---------- 印刷シート ---------- */
+#print-sheet{display:none;}
+@media print{
+  @page{size:A4 portrait; margin:0;}
+  body{background:#fff;}
+  .screen{display:none !important;}
+  #print-sheet{
+    display:block; width:210mm; height:296mm; padding:10mm 12mm;
+    font-family:"Hiragino Maru Gothic ProN","Hiragino Sans",sans-serif; color:#333;
+  }
+}
+.ps-title-row{margin-bottom:4mm;}
+.ps-title{font-size:19pt; font-weight:900; color:#14524a;}
+.ps-check{display:flex; align-items:center; gap:3mm; font-size:9pt; color:#14524a; justify-content:flex-end; margin-top:2mm;}
+.ps-check .bar{width:50mm; height:5mm; border:1.2pt solid #14524a; position:relative;}
+.ps-check .bar::after{content:""; position:absolute; left:25mm; top:0; bottom:0; border-left:.6pt solid #14524a;}
+.ps-board{text-align:center;}
+.ps-board svg{display:inline-block;}
+.ps-steps{margin-top:4mm; font-size:11pt; line-height:1.8;}
+.ps-steps b{color:#14524a;}
+.ps-record{margin-top:5mm; display:flex; gap:8mm; font-size:11pt;}
+.ps-record .fld{flex:1; border-bottom:.8pt solid #999; padding-bottom:1.5mm; min-height:8mm;}
+.ps-record .fld.short{flex:.6;}
+.ps-foot{margin-top:6mm; font-size:8.5pt; color:#999;}
+</style>
+</head>
+<body>
+
+<!-- タイトル画面 -->
+<div class="screen on" id="scr-title">
+  <span class="logo-badge">古典パズル 1857年</span>
+  <h1 class="app-title">二十面体ゲーム</h1>
+  <p class="app-sub">〜 ハミルトンの世界一周 〜</p>
+  <p class="sub">20の頂点を 一度ずつ訪ねて、出発点にもどる輪を作りましょう。<br>都市名モードでは、20都市をめぐる世界一周の旅になります。</p>
+  <div class="demo-card"><div id="demo-art"></div></div>
+  <div class="mode-row" id="mode-row">
+    <button class="mode-btn sel" type="button" data-mode="letter">文字モード（A〜T）</button>
+    <button class="mode-btn" type="button" data-mode="city">都市名モード</button>
+  </div>
+  <button class="big-btn" id="btn-start" type="button">旅をはじめる</button>
+  <div class="btn-row">
+    <button class="big-btn ghost" id="btn-print-ws" type="button">ワークシートを印刷</button>
+    <button class="big-btn ghost" id="btn-print-ans" type="button">答え図を印刷</button>
+  </div>
+  <div class="howto">
+    <b>あそびかた</b><br>
+    1. まず、出発したい頂点をタップします。<br>
+    2. 線でつながった、まだ訪ねていない頂点をタップして進みます。<br>
+    3. 全部の頂点を訪ねたら、出発点とつながっている頂点をタップして輪を閉じれば完成です。<br>
+    4. 困ったら「ヒント」が段階的に助けてくれます。
+  </div>
+  <p class="credit">アイルランドの数学者ハミルトンが1857年に考案した「Icosian Game」が原点です。<br>盤は正十二面体の頂点と辺を平面に広げた図（シュレーゲル図）です。</p>
+</div>
+
+<!-- 遊ぶ画面 -->
+<div class="screen" id="scr-play">
+  <div class="play-head">
+    <span class="ttl">二十面体ゲーム</span>
+    <button class="small-btn" id="btn-mode2" type="button">都市名に切替</button>
+    <button class="small-btn" id="btn-home" type="button">もどる</button>
+  </div>
+  <div id="board-card">
+    <div id="board-box"></div>
+    <div id="stamp">一周達成！</div>
+  </div>
+  <div class="status">
+    <div class="now" id="st-now">出発点を選んでください</div>
+    <div class="meta" id="st-meta">訪ねた頂点 0/20 ・ 残り 20 ・ 手数 0</div>
+  </div>
+  <p class="msg" id="msg"></p>
+  <div class="btn-row">
+    <button class="big-btn ghost" id="btn-undo" type="button">1手戻る</button>
+    <button class="big-btn ghost" id="btn-restart" type="button">やり直し</button>
+    <button class="big-btn ghost" id="btn-repick" type="button">スタート変更</button>
+    <button class="big-btn" id="btn-hint" type="button">ヒント</button>
+  </div>
+  <div id="done-box">
+    <div class="ttl2">世界一周 達成！</div>
+    <div class="meta2" id="done-meta"></div>
+    <div id="itinerary"></div>
+    <div class="btn-row">
+      <button class="big-btn" id="btn-again" type="button">もう一度（同じ出発点）</button>
+      <button class="big-btn green" id="btn-newstart" type="button">別の出発点で</button>
+    </div>
+  </div>
+  <div class="btn-row">
+    <button class="big-btn ghost" id="btn-print-ws2" type="button">ワークシートを印刷</button>
+    <button class="big-btn ghost" id="btn-print-ans2" type="button">答え図を印刷</button>
+  </div>
+  <p class="note-line">不具合が出るかもしれません。実際にご使用の際に不具合がありましたらコメント欄からお知らせください。</p>
+</div>
+
+<!-- 印刷シート（印刷時のみ表示） -->
+<div id="print-sheet">
+  <div class="ps-title-row">
+    <div class="ps-title" id="ps-title">二十面体ゲーム</div>
+    <div class="ps-check"><span class="bar"></span><span>この線が5cmなら 印刷は正確です</span></div>
+  </div>
+  <div class="ps-board" id="ps-board"></div>
+  <div class="ps-steps" id="ps-steps">
+    <b>あそびかた</b>　1. 出発点を1つ決めて ○ をつけます。　2. 線にそって頂点をたどり、一度ずつ全部の頂点を通ります。　3. 最後に、出発点へもどる線があれば完成です。
+  </div>
+  <div class="ps-record" id="ps-record">
+    <div class="fld">なまえ</div>
+    <div class="fld short">月　　日</div>
+    <div class="fld short">手数</div>
+    <div class="fld short">かかった時間</div>
+  </div>
+  <div class="ps-foot">二十面体ゲーム 〜ハミルトンの世界一周〜（ハミルトン考案、1857年）</div>
+</div>
+
+<script>
+"use strict";
+/* ================= 盤データ（設計時に検証済みの隣接規則） ================= */
+const RINGS = [
+  { key: "O", r: 1.00, a0: 90,  letters: ["A", "B", "C", "D", "E"] },
+  { key: "P", r: 0.68, a0: 90,  letters: ["F", "G", "H", "I", "J"] },
+  { key: "Q", r: 0.46, a0: 126, letters: ["K", "L", "M", "N", "O"] },
+  { key: "I", r: 0.22, a0: 126, letters: ["P", "Q", "R", "S", "T"] },
+];
+const CITY = { A:"アテネ", B:"ベルリン", C:"カイロ", D:"デリー", E:"江戸", F:"フィレンツェ", G:"ジュネーブ", H:"ハノイ", I:"イスタンブール", J:"ジャカルタ", K:"京都", L:"ロンドン", M:"マドリード", N:"新潟", O:"オスロ", P:"パリ", Q:"キト", R:"ローマ", S:"シドニー", T:"東京" };
+const CITY_LINES = { F: ["フィレン", "ツェ"], I: ["イスタン", "ブール"] };
+const EXAMPLE = ["A","B","G","L","Q","P","K","F","O","T","S","R","M","H","C","D","I","N","J","E"];
+
+const POS = {}, ADJ = {};
+(function buildGraph(){
+  const L = (ri, k) => RINGS[ri].letters[(k + 5) % 5];
+  RINGS.forEach((ring, ri) => {
+    ring.letters.forEach((letter, k) => {
+      const a = (ring.a0 + 72 * k) * Math.PI / 180;
+      POS[letter] = { x: 200 + ring.r * 176 * Math.sin(a), y: 200 - ring.r * 176 * Math.cos(a) };
+      ADJ[letter] = [];
+    });
+  });
+  const add = (a, b) => { ADJ[a].push(b); ADJ[b].push(a); };
+  for (let k = 0; k < 5; k++){
+    add(L(0,k), L(0,k+1));   // 外周
+    add(L(3,k), L(3,k+1));   // 内周
+    add(L(0,k), L(1,k));     // 外→中・外
+    add(L(2,k), L(3,k));     // 中・内→内
+    add(L(1,k), L(2,k));     // 中の縦
+    add(L(1,k), L(2,k-1));   // 中の斜め
+  }
+})();
+
+/* ================= 盤SVG ================= */
+function cityLines(v){
+  if (CITY_LINES[v]) return CITY_LINES[v];
+  return [CITY[v]];
+}
+function boardSVG(o){
+  const mode = o.mode || "letter";
+  const path = o.path || [];
+  const visited = new Set(path);
+  const cur = path.length ? path[path.length - 1] : null;
+  const start = path.length ? path[0] : null;
+  const forPrint = !!o.forPrint;
+  let s = '<svg viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg" role="img">';
+  /* 辺 */
+  s += '<g stroke="' + (forPrint ? "#b9b9b9" : "#c3d4cc") + '" stroke-width="' + (forPrint ? 2 : 2.5) + '">';
+  const seenE = new Set();
+  Object.keys(ADJ).forEach(a => ADJ[a].forEach(b => {
+    const key = [a, b].sort().join("");
+    if (seenE.has(key)) return; seenE.add(key);
+    s += '<line x1="' + POS[a].x.toFixed(1) + '" y1="' + POS[a].y.toFixed(1) + '" x2="' + POS[b].x.toFixed(1) + '" y2="' + POS[b].y.toFixed(1) + '"/>';
+  }));
+  s += '</g>';
+  const pts = arr => arr.map(v => POS[v].x.toFixed(1) + "," + POS[v].y.toFixed(1)).join(" ");
+  /* 解の例（答え図・デモ） */
+  if (o.solutionPath && o.solutionPath.length){
+    const cyc = [...o.solutionPath, o.solutionPath[0]];
+    s += '<polyline points="' + pts(cyc) + '" fill="none" stroke="' + (o.demo ? "#e9a13b" : "#d23c2a") + '" stroke-width="' + (o.demo ? 5 : 3.5) + '" stroke-linejoin="round" stroke-linecap="round" opacity="' + (o.demo ? 0.55 : 0.8) + '"/>';
+  }
+  /* ヒントLv3：完成までの道 */
+  if (o.completion && o.completion.length && cur){
+    const cyc = [cur, ...o.completion, start];
+    s += '<polyline points="' + pts(cyc) + '" fill="none" stroke="#e9a13b" stroke-width="3.5" stroke-dasharray="7 6" stroke-linejoin="round" opacity="0.85"/>';
+  }
+  /* 進んだ道 */
+  if (path.length > 1){
+    const cyc = o.done ? [...path, start] : path;
+    s += '<polyline points="' + pts(cyc) + '" fill="none" stroke="#c8541e" stroke-width="5" stroke-linejoin="round" stroke-linecap="round" opacity="0.85"/>';
+    if (o.done){
+      s += '<path d="M' + cyc.map(v => POS[v].x.toFixed(1) + " " + POS[v].y.toFixed(1)).join(" L") + ' Z" fill="none" stroke="#e9a13b" stroke-width="5" stroke-linejoin="round" pathLength="100" class="run-light"/>';
+    }
+  }
+  /* ヒントLv2：次の1手 */
+  if (o.nextV && cur){
+    s += '<line x1="' + POS[cur].x + '" y1="' + POS[cur].y + '" x2="' + POS[o.nextV].x + '" y2="' + POS[o.nextV].y + '" stroke="#e9a13b" stroke-width="4" stroke-linecap="round" opacity="0.9"/>';
+  }
+  /* 頂点 */
+  Object.keys(POS).forEach(v => {
+    const p = POS[v];
+    const isCur = v === cur, isStart = v === start, isVis = visited.has(v);
+    const stroke = forPrint ? "#666" : (isCur ? "#c8541e" : isVis ? "#c8541e" : "#17645a");
+    const fill = forPrint ? "#ffffff" : (isCur ? "#c8541e" : isVis ? "#ffe6bd" : "#fffdf8");
+    s += '<g class="vtx" data-v="' + v + '">';
+    if (!forPrint) s += '<circle class="hit" cx="' + p.x + '" cy="' + p.y + '" r="30"/>';
+    if (o.cands && o.cands.includes(v))
+      s += '<circle class="cand-ring" cx="' + p.x + '" cy="' + p.y + '" r="23" fill="none" stroke="#e9a13b" stroke-width="4"/>';
+    if (o.nextV === v)
+      s += '<circle cx="' + p.x + '" cy="' + p.y + '" r="23" fill="none" stroke="#e9a13b" stroke-width="4"/>';
+    if (isStart && !forPrint)
+      s += '<circle cx="' + p.x + '" cy="' + p.y + '" r="21.5" fill="none" stroke="#e9a13b" stroke-width="3"/>';
+    if (mode === "city" && !forPrint){
+      const lines = cityLines(v);
+      const w = Math.max(...lines.map(t => t.length)) * 9.6 + 9;
+      const h = lines.length * 11.5 + 6;
+      s += '<rect x="' + (p.x - w/2) + '" y="' + (p.y - h/2) + '" width="' + w + '" height="' + h + '" rx="7" fill="' + (isCur ? "#c8541e" : "#fffdf8") + '" stroke="' + stroke + '" stroke-width="2"/>';
+      lines.forEach((t, i) => {
+        const y = p.y + (i - (lines.length - 1) / 2) * 11.5 + 3.4;
+        s += '<text x="' + p.x + '" y="' + y + '" text-anchor="middle" font-size="9.5" font-weight="700" fill="' + (isCur ? "#ffffff" : "#2f3a3a") + '">' + t + '</text>';
+      });
+    } else {
+      s += '<circle cx="' + p.x + '" cy="' + p.y + '" r="16.5" fill="' + fill + '" stroke="' + stroke + '" stroke-width="2.2"/>';
+      s += '<text x="' + p.x + '" y="' + (p.y + 5.5) + '" text-anchor="middle" font-size="15" font-weight="700" fill="' + (forPrint ? "#333" : isCur ? "#ffffff" : "#2f3a3a") + '">' + v + '</text>';
+      if (mode === "city" && forPrint){
+        /* 印刷の都市名は、中心から外向きにずらして重なりを避ける */
+        const dx = p.x - 200, dy = p.y - 200, len = Math.hypot(dx, dy) || 1;
+        const ux = dx / len, uy = dy / len;
+        const nx = p.x + ux * 25, ny = p.y + uy * 25 + 3;
+        const anch = ux > 0.35 ? "start" : (ux < -0.35 ? "end" : "middle");
+        s += '<text x="' + nx.toFixed(1) + '" y="' + ny.toFixed(1) + '" text-anchor="' + anch + '" font-size="8.5" fill="#555" style="paint-order:stroke;stroke:#ffffff;stroke-width:3px">' + CITY[v] + '</text>';
+      }
+    }
+    s += '</g>';
+  });
+  s += '</svg>';
+  return s;
+}
+
+/* ================= 探索（ヒント・詰み判定） ================= */
+function solveFrom(p){
+  const start = p[0];
+  const visited = new Set(p);
+  if (visited.size === 20) return ADJ[p[p.length - 1]].includes(start) ? [] : null;
+  let budget = 300000;
+  const dfs = (u, vis) => {
+    if (--budget < 0) return null;
+    if (vis.size === 20) return ADJ[u].includes(start) ? [] : null;
+    const ns = ADJ[u].filter(w => !vis.has(w))
+      .map(w => [ADJ[w].filter(x => !vis.has(x)).length, w])
+      .sort((a, b) => a[0] - b[0]);
+    for (const [, w] of ns){
+      vis.add(w);
+      const r = dfs(w, vis);
+      if (r) return [w, ...r];
+      vis.delete(w);
+    }
+    return null;
+  };
+  return dfs(p[p.length - 1], visited);
+}
+
+/* ================= 音 ================= */
+let AC = null;
+function ac(){ if (!AC) AC = new (window.AudioContext || window.webkitAudioContext)(); if (AC.state === "suspended") AC.resume(); return AC; }
+function tone(freq, delay, dur, type, vol){
+  try{
+    const c = ac(), t = c.currentTime + delay;
+    const o = c.createOscillator(), g = c.createGain();
+    o.type = type || "triangle"; o.frequency.value = freq;
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(vol || 0.2, t + 0.015);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g); g.connect(c.destination); o.start(t); o.stop(t + dur + 0.05);
+  }catch(e){}
+}
+const sndMove = () => tone(1318, 0, 0.07, "triangle", 0.16);
+const sndStart = () => { tone(1318, 0, 0.08, "triangle", 0.16); tone(1568, 0.07, 0.1, "triangle", 0.16); };
+const sndBad = () => { tone(1046, 0, 0.07, "triangle", 0.1); tone(1046, 0.09, 0.08, "triangle", 0.1); };
+const sndUndo = () => { tone(1568, 0, 0.06, "triangle", 0.14); tone(1318, 0.05, 0.07, "triangle", 0.14); };
+const sndHint = () => { tone(1568, 0, 0.08, "triangle", 0.12); tone(2093, 0.07, 0.11, "triangle", 0.12); };
+const sndFanfare = () => { [1318, 1568, 2093, 1568, 2093, 2637].forEach((f, i) => tone(f, i * 0.11, 0.22, "triangle", 0.2)); tone(1318, 0.68, 0.5, "triangle", 0.12); tone(1568, 0.68, 0.5, "triangle", 0.12); tone(2093, 0.68, 0.55, "triangle", 0.14); };
+
+/* ================= ゲーム状態 ================= */
+const $ = id => document.getElementById(id);
+let mode = "letter";
+try{ mode = localStorage.getItem("icosian-mode") || "letter"; }catch(e){}
+let phase = "pick";           // pick | play | done
+let path = [];
+let moves = 0;
+let startAt = null, elapsedSec = 0, timerInt = null;
+let hintLevel = 0, hintView = {};   // {cands:[], nextV:null, completion:null}
+
+function label(v){ return mode === "city" ? CITY[v] + "（" + v + "）" : v; }
+function fmtTime(sec){ return Math.floor(sec / 60) + ":" + String(sec % 60).padStart(2, "0"); }
+function setMsg(t){ $("msg").textContent = t || ""; }
+
+function render(){
+  $("board-box").innerHTML = boardSVG({
+    mode, path, done: phase === "done",
+    cands: hintView.cands || [], nextV: hintView.nextV || null,
+    completion: hintView.completion || null,
+  });
+  $("stamp").style.display = phase === "done" ? "block" : "none";
+  const now = $("st-now"), meta = $("st-meta");
+  if (phase === "pick") now.textContent = "出発点を選んでください";
+  else if (phase === "done") now.textContent = "一周達成！ おつかれさまでした";
+  else now.textContent = "今：" + label(path[path.length - 1]) + "　／　出発：" + label(path[0]);
+  meta.textContent = "訪ねた頂点 " + path.length + "/20 ・ 残り " + (20 - path.length) + " ・ 手数 " + moves
+    + (phase !== "pick" ? " ・ " + fmtTime(elapsedSec) : "");
+  $("done-box").style.display = phase === "done" ? "block" : "none";
+  $("btn-mode2").textContent = mode === "city" ? "文字に切替" : "都市名に切替";
+}
+function startTimer(){
+  stopTimer();
+  startAt = Date.now() - elapsedSec * 1000;
+  timerInt = setInterval(() => { elapsedSec = Math.floor((Date.now() - startAt) / 1000); if (phase === "play") render(); }, 1000);
+}
+function stopTimer(){ if (timerInt) clearInterval(timerInt); timerInt = null; }
+function resetHint(){ hintLevel = 0; hintView = {}; }
+
+function tap(v){
+  ac();
+  if (phase === "pick"){
+    path = [v]; phase = "play"; moves = 0; elapsedSec = 0; resetHint();
+    startTimer(); sndStart();
+    setMsg("出発：" + label(v) + "。線でつながった、まだの頂点をタップして進みましょう");
+    render(); return;
+  }
+  if (phase === "done") return;
+  const cur = path[path.length - 1];
+  if (v === cur) return;
+  if (path.length > 1 && v === path[path.length - 2]){ doUndo(); return; }
+  if (path.length === 20 && v === path[0] && ADJ[cur].includes(v)){ complete(); return; }
+  if (!path.includes(v) && ADJ[cur].includes(v)){
+    path.push(v); moves++; resetHint(); sndMove();
+    const rest = ADJ[v].filter(w => !path.includes(w));
+    if (path.length === 20){
+      if (ADJ[v].includes(path[0])) setMsg("全部訪ねました！ あとは出発点 " + label(path[0]) + " をタップして輪を閉じましょう");
+      else setMsg("全部訪ねましたが、出発点とつながっていません。1手戻って別のみちを試しましょう");
+    } else if (rest.length === 0){
+      setMsg("行き詰まりました。あせらず、1手戻って別のみちを試しましょう");
+      sndBad();
+    } else setMsg("");
+    render(); return;
+  }
+  if (v === path[0] && path.length < 20) setMsg("輪を閉じるのは、全部の頂点を訪ねてからです");
+  else if (path.includes(v)) setMsg("そこは もう訪ねました");
+  else setMsg("線でつながった頂点をタップしてください");
+  sndBad();
+}
+function doUndo(){
+  if (phase === "pick" || path.length <= 1){ if (phase === "play") setMsg("これ以上は戻れません"); return; }
+  if (phase === "done"){ phase = "play"; startTimer(); }
+  path.pop(); resetHint(); sndUndo(); setMsg("");
+  render();
+}
+function doRestart(){
+  if (!path.length) return;
+  path = [path[0]]; phase = "play"; moves = 0; elapsedSec = 0; resetHint();
+  startTimer(); sndStart(); setMsg("出発：" + label(path[0]) + " から やり直します");
+  render();
+}
+function doRepick(){
+  path = []; phase = "pick"; moves = 0; elapsedSec = 0; resetHint(); stopTimer();
+  setMsg(""); render();
+}
+function complete(){
+  moves++; phase = "done"; stopTimer(); resetHint();
+  sndFanfare();
+  let best = null;
+  try{
+    best = JSON.parse(localStorage.getItem("icosian-best") || "null");
+    if (!best || elapsedSec < best.sec){ best = { sec: elapsedSec, moves }; localStorage.setItem("icosian-best", JSON.stringify(best)); best.newRecord = true; }
+  }catch(e){}
+  $("done-meta").textContent = "手数 " + moves + " ・ かかった時間 " + fmtTime(elapsedSec)
+    + (best ? " ・ 最速記録 " + fmtTime(best.sec) + (best.newRecord ? "（新記録！）" : "") : "");
+  const names = [...path, path[0]].map(v => mode === "city" ? CITY[v] : v);
+  $("itinerary").innerHTML = "<b>旅程</b>　" + names.join(" → ");
+  setMsg("");
+  render();
+}
+
+/* ヒント */
+$("btn-hint").addEventListener("click", () => {
+  if (phase === "pick"){ setMsg("まず、出発点をタップしてください"); return; }
+  if (phase === "done") return;
+  ac(); sndHint();
+  const cur = path[path.length - 1];
+  if (path.length === 20){
+    if (ADJ[cur].includes(path[0])){ hintView = { nextV: path[0] }; setMsg("あとは出発点 " + label(path[0]) + " をタップするだけです"); render(); }
+    else setMsg("出発点とつながっていません。1手戻ってみましょう");
+    return;
+  }
+  hintLevel = Math.min(3, hintLevel + 1);
+  if (hintLevel === 1){
+    const cands = ADJ[cur].filter(w => !path.includes(w)).filter(w => solveFrom([...path, w]) !== null);
+    if (!cands.length){ hintLevel = 0; hintView = {}; setMsg("ここからは完成できないようです。1手戻って別のみちを試しましょう"); render(); return; }
+    hintView = { cands };
+    setMsg("ヒント1：光っている頂点なら、進んでも完成できます");
+  } else if (hintLevel === 2){
+    const sol = solveFrom(path);
+    if (!sol || !sol.length){ hintLevel = 0; hintView = {}; setMsg("ここからは完成できないようです。1手戻って別のみちを試しましょう"); render(); return; }
+    hintView = { nextV: sol[0] };
+    setMsg("ヒント2：次は " + label(sol[0]) + " がおすすめです");
+  } else {
+    if (!confirm("ここからの完成までの道を、全部表示します。よろしいですか？")){ hintLevel = 2; return; }
+    const sol = solveFrom(path);
+    if (!sol){ hintLevel = 0; hintView = {}; setMsg("ここからは完成できないようです。1手戻って別のみちを試しましょう"); render(); return; }
+    hintView = { completion: sol };
+    setMsg("ヒント3：金色の点線が、完成までの道です");
+  }
+  render();
+});
+
+/* 盤のタップ（委任） */
+$("board-box").addEventListener("pointerdown", e => {
+  const g = e.target.closest(".vtx");
+  if (!g) return;
+  e.preventDefault();
+  tap(g.dataset.v);
+});
+
+/* ボタン */
+$("btn-undo").addEventListener("click", doUndo);
+$("btn-restart").addEventListener("click", doRestart);
+$("btn-repick").addEventListener("click", doRepick);
+$("btn-again").addEventListener("click", doRestart);
+$("btn-newstart").addEventListener("click", doRepick);
+$("btn-home").addEventListener("click", () => { stopTimer(); show("scr-title"); });
+$("btn-start").addEventListener("click", () => { ac(); doRepick(); show("scr-play"); });
+function setMode(m){
+  mode = m;
+  try{ localStorage.setItem("icosian-mode", m); }catch(e){}
+  document.querySelectorAll("#mode-row .mode-btn").forEach(b => b.classList.toggle("sel", b.dataset.mode === m));
+  render();
+}
+document.querySelectorAll("#mode-row .mode-btn").forEach(b => b.addEventListener("click", () => { setMode(b.dataset.mode); sndMove(); }));
+$("btn-mode2").addEventListener("click", () => setMode(mode === "city" ? "letter" : "city"));
+function show(id){
+  document.querySelectorAll(".screen").forEach(s => s.classList.remove("on"));
+  $(id).classList.add("on");
+  window.scrollTo(0, 0);
+}
+
+/* ================= 印刷 ================= */
+let lastPrintKind = "ws";
+function fillPrint(kind){
+  lastPrintKind = kind;
+  const isAns = kind === "ans";
+  $("ps-title").textContent = isAns ? "二十面体ゲーム 答え図" : "二十面体ゲーム 〜ハミルトンの世界一周〜";
+  $("ps-board").innerHTML = boardSVG({ mode, forPrint: true, solutionPath: isAns ? EXAMPLE : null })
+    .replace("<svg ", '<svg width="170mm" height="170mm" ');
+  $("ps-record").style.display = isAns ? "none" : "flex";
+  $("ps-steps").innerHTML = isAns
+    ? "赤い線は答えの一例です。ほかの答えもたくさんあります。"
+    : "<b>あそびかた</b>　1. 出発点を1つ決めて ○ をつけます。　2. 線にそって頂点をたどり、一度ずつ全部の頂点を通ります。　3. 最後に、出発点へもどる線があれば完成です。";
+}
+function doPrint(kind){ fillPrint(kind); setTimeout(() => window.print(), 60); }
+$("btn-print-ws").addEventListener("click", () => doPrint("ws"));
+$("btn-print-ans").addEventListener("click", () => doPrint("ans"));
+$("btn-print-ws2").addEventListener("click", () => doPrint("ws"));
+$("btn-print-ans2").addEventListener("click", () => doPrint("ans"));
+window.addEventListener("beforeprint", () => fillPrint(lastPrintKind));
+
+/* 初期描画 */
+$("demo-art").innerHTML = boardSVG({ mode: "letter", forPrint: true, solutionPath: EXAMPLE, demo: true });
+setMode(mode);
+render();
+
+/* テスト用フック */
+window.__icos = { ADJ, POS, EXAMPLE, solveFrom, tap, getState: () => ({ phase, path: [...path], moves }) };
+</script>
+</body>
+</html>
